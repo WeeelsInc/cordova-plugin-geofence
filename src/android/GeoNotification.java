@@ -5,17 +5,19 @@ import com.google.gson.Gson;
 
 public class GeoNotification {
 	public String id;
+  public String token;
+  public String apiUrl;
 	public double latitude;
 	public double longitude;
 	public int radius;
 	public int transitionType;
-	
+
 	public Notification notification;
 
 	public GeoNotification()
 	{
 	}
-	
+
 	public Geofence toGeofence() {
         return new Geofence.Builder()
                 .setRequestId(id)
@@ -25,7 +27,7 @@ public class GeoNotification {
                 .setExpirationDuration(Long.MAX_VALUE)
                 .build();
     }
-	
+
 	public String toJson(){
 		return new Gson().toJson(this);
 	}

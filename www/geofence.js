@@ -36,6 +36,10 @@ Geofence.prototype.initialize = function (success, error) {
     return execPromise(success, error, 'GeofencePlugin', 'initialize', []);
 };
 
+Geofence.prototype.configApi = function (args, success, error) {
+    return execPromise(success, error, 'GeofencePlugin', 'configApi', [args.apiBase, args.authToken]);
+};
+
 /**
  * Removing geofences with given ids
  *

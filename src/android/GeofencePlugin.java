@@ -22,12 +22,17 @@ import android.content.Intent;
 import android.location.LocationManager;
 import android.util.Log;
 
+import android.content.SharedPreferences;
+
+
 public class GeofencePlugin extends CordovaPlugin {
     public static final String TAG = "GeofencePlugin";
     private GeoNotificationManager geoNotificationManager;
     private Context context;
     protected static Boolean isInBackground = true;
     private static CordovaWebView webView;
+    public static final String PREFS_NAME = "GeofencePluginPrefsFile";
+    protected SharedPreferences settings;
 
     /**
      * @param cordova The context of the main Activity.
@@ -40,6 +45,7 @@ public class GeofencePlugin extends CordovaPlugin {
         context = this.cordova.getActivity().getApplicationContext();
         Logger.setLogger(new Logger(TAG, context, false));
         geoNotificationManager = new GeoNotificationManager(context);
+        settings = context.getSharedPreferences(PREFS_NAME, 0);
     }
 
     @Override
@@ -72,6 +78,16 @@ public class GeofencePlugin extends CordovaPlugin {
         	callbackContext.success(gson.toJson(geoNotifications));
         }
         else if(action.equals("initialize")) {
+
+        }
+        else if(action.equals("configApi")) {
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString("apiUrl", args.getString(0));
+            editor.putString("authToken", args.getString(1));
+            editor.commit();
+
+            Log.d(TAG, "Stored apiUrl: "+settings.getString("apiUrl", ""));
+            Log.d(TAG, "Stored authToken: "+settings.getString("authToken", ""));
 
         }
         else {

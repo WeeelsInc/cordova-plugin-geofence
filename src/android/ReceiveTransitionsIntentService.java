@@ -2,6 +2,11 @@ package com.cowbell.cordova.geofence;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,11 +21,17 @@ import android.content.Intent;
 import android.util.Log;
 import android.app.NotificationManager;
 
+import android.content.SharedPreferences;
+
 
 public class ReceiveTransitionsIntentService extends IntentService {
-	protected BeepHelper beepHelper;
-	protected GeoNotificationNotifier notifier;
-	protected GeoNotificationStore store;
+    protected BeepHelper beepHelper;
+    protected GeoNotificationNotifier notifier;
+    protected GeoNotificationStore store;
+    protected SharedPreferences settings;
+    protected String apiUrl;
+    protected String authToken;
+    public static final String PREFS_NAME = "GeofencePluginPrefsFile";
 
     /**
      * Sets an identifier for the service
@@ -40,10 +51,15 @@ public class ReceiveTransitionsIntentService extends IntentService {
      */
     @Override
     protected void onHandleIntent(Intent intent) {
-    	notifier = new GeoNotificationNotifier((NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE), this);
+        notifier = new GeoNotificationNotifier((NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE), this);
 
-    	Logger logger = Logger.getLogger();
-    	// First check for errors
+        Logger logger = Logger.getLogger();
+
+        settings = this.getSharedPreferences(PREFS_NAME, 0);
+        apiUrl = settings.getString("apiUrl", "");
+        authToken = settings.getString("authToken", "");
+
+        // First check for errors
         if (LocationClient.hasError(intent)) {
             // Get the error code with a static method
             int errorCode = LocationClient.getErrorCode(intent);
@@ -67,28 +83,59 @@ public class ReceiveTransitionsIntentService extends IntentService {
                  ||
                 (transitionType == Geofence.GEOFENCE_TRANSITION_EXIT)
                ) {
-            	logger.log(Log.DEBUG, "Geofence transition detected");
+                logger.log(Log.DEBUG, "Geofence transition detected");
                 List <Geofence> triggerList = LocationClient.getTriggeringGeofences(intent);
                 List<GeoNotification> geoNotifications = new ArrayList<GeoNotification>();
                 for(Geofence fence : triggerList){
-                	String fenceId = fence.getRequestId();
-                	GeoNotification geoNotification = store.getGeoNotification(fenceId);
-
-                	if(geoNotification != null){
-                		notifier.notify(geoNotification.notification, (transitionType == Geofence.GEOFENCE_TRANSITION_ENTER));
-                        geoNotifications.add(geoNotification);
-                	}
-                }
-
-                if (geoNotifications.size() > 0) {
-                    GeofencePlugin.fireRecieveTransition(geoNotifications);
+                    String fenceId = fence.getRequestId();
+                    if (transitionType == Geofence.GEOFENCE_TRANSITION_ENTER) {
+                        postUpdate(fenceId);
+                    }
                 }
             }
             else {
-            	logger.log(Log.ERROR,
+                logger.log(Log.ERROR,
                         "Geofence transition error: " +
                         transitionType);
             }
         }
     }
+
+    private boolean postUpdate(String fenceId) {
+        Logger logger = Logger.getLogger();
+        if (apiUrl == "") {
+            logger.log(Log.ERROR, "Could not post geofence update, apiUrl was empty");
+            return false;
+        }
+        try {
+            String url = apiUrl+"/hubs/"+fenceId+"/enter.json";
+            logger.log(Log.INFO, "Using url: " + url);
+            DefaultHttpClient httpClient = new DefaultHttpClient();
+            HttpPost request = new HttpPost(url);
+
+            JSONObject params = new JSONObject();
+            params.put("authToken", authToken);
+            params.put("auth_token", authToken);
+
+            StringEntity se = new StringEntity(params.toString());
+
+            request.setEntity(se);
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-type", "application/json");
+
+            logger.log(Log.INFO, "Posting to " + request.getURI().toString());
+            HttpResponse response = httpClient.execute(request);
+            logger.log(Log.INFO, "Response received: " + response.getStatusLine());
+            if (response.getStatusLine().getStatusCode() == 200 || response.getStatusLine().getStatusCode() == 201) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            logger.log(Log.ERROR, "Exception posting geofence update: " + e);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }
