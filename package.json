@@ -5,11 +5,7 @@
   "cordova": {
     "id": "cordova-plugin-geofence",
     "platforms": [
-      "android",
-      "ios",
-      "wp8",
-      "windows8",
-      "windows"
+      "android"
     ]
   },
   "repository": {
@@ -21,11 +17,7 @@
     "plugin",
     "geofence",
     "ecosystem:cordova",
-    "cordova-android",
-    "cordova-ios",
-    "cordova-wp8",
-    "cordova-windows8",
-    "cordova-windows"
+    "cordova-android"
   ],
   "author": "Cowbell Labs",
   "license": "Apache 2.0",
