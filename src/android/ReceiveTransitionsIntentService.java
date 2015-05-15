@@ -1,4 +1,5 @@
 package com.cowbell.cordova.geofence;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,18 +12,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.android.gms.location.Geofence;
-import com.google.android.gms.location.LocationClient;
-
 import android.R;
+
 import android.app.IntentService;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-import android.app.NotificationManager;
 
 import android.content.SharedPreferences;
 
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.LocationClient;
 
 public class ReceiveTransitionsIntentService extends IntentService {
     protected BeepHelper beepHelper;
@@ -42,22 +43,30 @@ public class ReceiveTransitionsIntentService extends IntentService {
         store = new GeoNotificationStore(this);
         Logger.setLogger(new Logger(GeofencePlugin.TAG, this, false));
     }
+
     /**
      * Handles incoming intents
-     *@param intent The Intent sent by Location Services. This
-     * Intent is provided
-     * to Location Services (inside a PendingIntent) when you call
-     * addGeofences()
+     *
+     * @param intent
+     *            The Intent sent by Location Services. This Intent is provided
+     *            to Location Services (inside a PendingIntent) when you call
+     *            addGeofences()
      */
     @Override
     protected void onHandleIntent(Intent intent) {
-        notifier = new GeoNotificationNotifier((NotificationManager)this.getSystemService(Context.NOTIFICATION_SERVICE), this);
+        notifier = new GeoNotificationNotifier(
+                (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE),
+                this
+        );
 
         Logger logger = Logger.getLogger();
+        logger.log(Log.DEBUG, "ReceiveTransitionsIntentService - onHandleIntent");
 
         settings = this.getSharedPreferences(PREFS_NAME, 0);
         apiUrl = settings.getString("apiUrl", "");
         authToken = settings.getString("authToken", "");
+
+        
 
         // First check for errors
         if (LocationClient.hasError(intent)) {
@@ -65,16 +74,15 @@ public class ReceiveTransitionsIntentService extends IntentService {
             int errorCode = LocationClient.getErrorCode(intent);
             // Log the error
             logger.log(Log.ERROR,
-                    "Location Services error: " +
-                    Integer.toString(errorCode));
+                    "Location Services error: " + Integer.toString(errorCode));
             /*
-             * You can also send the error code to an Activity or
-             * Fragment with a broadcast Intent
+             * You can also send the error code to an Activity or Fragment with
+             * a broadcast Intent
              */
-        /*
-         * If there's no error, get the transition type and the IDs
-         * of the geofence or geofences that triggered the transition
-         */
+            /*
+             * If there's no error, get the transition type and the IDs of the
+             * geofence or geofences that triggered the transition
+             */
         } else {
             // Get the type of transition (entry or exit)
             int transitionType =

@@ -11,15 +11,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.android.gms.location.Geofence;
-import com.google.gson.Gson;
-
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
-import android.content.Context;
 import android.content.Intent;
-import android.location.LocationManager;
+import android.content.Context;
 import android.util.Log;
 
 import android.content.SharedPreferences;
@@ -30,13 +23,15 @@ public class GeofencePlugin extends CordovaPlugin {
     private GeoNotificationManager geoNotificationManager;
     private Context context;
     protected static Boolean isInBackground = true;
-    private static CordovaWebView webView;
     public static final String PREFS_NAME = "GeofencePluginPrefsFile";
     protected SharedPreferences settings;
+    private static CordovaWebView webView = null;
 
     /**
-     * @param cordova The context of the main Activity.
-     * @param webView The associated CordovaWebView.
+     * @param cordova
+     *            The context of the main Activity.
+     * @param webView
+     *            The associated CordovaWebView.
      */
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -49,38 +44,36 @@ public class GeofencePlugin extends CordovaPlugin {
     }
 
     @Override
-    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        Log.d(TAG, "GeofencePlugin execute action: "+ action + " args: " + args.toString());
+    public boolean execute(String action, JSONArray args,
+            CallbackContext callbackContext) throws JSONException {
+        Log.d(TAG, "GeofencePlugin execute action: " + action + " args: "
+                + args.toString());
 
-        if(action.equals("addOrUpdate")) {
+        if (action.equals("addOrUpdate")) {
             List<GeoNotification> geoNotifications = new ArrayList<GeoNotification>();
-            for(int i=0; i<args.length();i++) {
-            	GeoNotification not = parseFromJSONObject(args.getJSONObject(i));
-            	if(not != null){
+            for (int i = 0; i < args.length(); i++) {
+                GeoNotification not = parseFromJSONObject(args.getJSONObject(i));
+                if (not != null) {
                     geoNotifications.add(not);
-            	}
+                }
             }
-            geoNotificationManager.addGeoNotifications(geoNotifications, callbackContext);
-        }
-        else if(action.equals("remove")) {
+            geoNotificationManager.addGeoNotifications(geoNotifications,
+                    callbackContext);
+        } else if (action.equals("remove")) {
             List<String> ids = new ArrayList<String>();
-            for(int i=0; i<args.length();i++){
+            for (int i = 0; i < args.length(); i++) {
                 ids.add(args.getString(i));
             }
             geoNotificationManager.removeGeoNotifications(ids, callbackContext);
-        }
-        else if(action.equals("removeAll")) {
+        } else if (action.equals("removeAll")) {
             geoNotificationManager.removeAllGeoNotifications(callbackContext);
-        }
-        else if(action.equals("getWatched")) {
-        	List<GeoNotification> geoNotifications = geoNotificationManager.getWatched();
-        	Gson gson = new Gson();
-        	callbackContext.success(gson.toJson(geoNotifications));
-        }
-        else if(action.equals("initialize")) {
+        } else if (action.equals("getWatched")) {
+            List<GeoNotification> geoNotifications = geoNotificationManager
+                    .getWatched();
+            callbackContext.success(Gson.get().toJson(geoNotifications));
+        } else if (action.equals("initialize")) {
 
-        }
-        else if(action.equals("configApi")) {
+        } else if(action.equals("configApi")) {
             SharedPreferences.Editor editor = settings.edit();
             editor.putString("apiUrl", args.getString(0));
             editor.putString("authToken", args.getString(1));
@@ -89,24 +82,41 @@ public class GeofencePlugin extends CordovaPlugin {
             Log.d(TAG, "Stored apiUrl: "+settings.getString("apiUrl", ""));
             Log.d(TAG, "Stored authToken: "+settings.getString("authToken", ""));
 
-        }
-        else {
+        } else if (action.equals("deviceReady")) {
+            deviceReady();
+        } else {
             return false;
         }
         return true;
 
     }
 
-    private GeoNotification parseFromJSONObject(JSONObject object){
+    private GeoNotification parseFromJSONObject(JSONObject object) {
         GeoNotification geo = null;
         geo = GeoNotification.fromJson(object.toString());
         return geo;
     }
 
-    public static void fireRecieveTransition (List<GeoNotification> notifications) {
-    	Gson gson = new Gson();
-        String js     = "setTimeout('geofence.recieveTransition("+ gson.toJson(notifications)  + ")',0)";
-        webView.sendJavascript(js);
+    public static void onTransitionReceived(List<GeoNotification> notifications) {
+        String js = "setTimeout('geofence.onTransitionReceived("
+                + Gson.get().toJson(notifications) + ")',0)";
+        if (webView == null) {
+            Log.d(TAG, "Webview is null");
+        } else {
+            webView.sendJavascript(js);
+        }
     }
 
+    private void deviceReady() {
+        Intent intent = cordova.getActivity().getIntent();
+        String data = intent.getStringExtra("geofence.notification.data");
+        String js = "setTimeout('geofence.onNotificationClicked("
+                + data + ")',0)";
+
+        if (data == null) {
+            Log.d(TAG, "No notifications clicked.");
+        } else {
+            webView.sendJavascript(js);
+        }
+    }
 }

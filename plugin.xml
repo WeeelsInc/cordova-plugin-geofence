@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="com.cowbell.cordova.geofence" version="0.2.3">
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0" xmlns:m2="http://schemas.microsoft.com/appx/2013/manifest" xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-geofence" version="0.4.0">
     <name>geofence</name>
     <description>Geofence plugin</description>
     <license>Apache 2.0</license>
@@ -11,15 +11,23 @@
         <engine name="cordova" version=">=3.0.0" />
     </engines>
 
+    <js-module src="www/TransitionType.js" name="TransitionType">
+        <clobbers target="TransitionType" />
+    </js-module>
+
     <js-module src="www/geofence.js" name="geofence">
         <clobbers target="geofence" />
     </js-module>
 
     <dependency id="com.vladstirbu.cordova.promise" url="https://github.com/vstirbu/PromisesPlugin.git" />
+    <dependency id="android.support.v4" />
+    <dependency id="com.google.playservices" />
+
     <!-- android -->
     <platform name="android">
         <source-file src="src/android/AbstractGoogleServiceCommand.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/AddGeofenceCommand.java" target-dir="src/com/cowbell/cordova/geofence" />
+        <source-file src="src/android/AssetUtil.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/BeepHelper.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/BootReceiver.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/GeoNotification.java" target-dir="src/com/cowbell/cordova/geofence" />
@@ -29,6 +37,7 @@
         <source-file src="src/android/GeofencePlugin.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/GoogleServiceCommandExecutor.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/IGoogleServiceCommandListener.java" target-dir="src/com/cowbell/cordova/geofence" />
+        <source-file src="src/android/Gson.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/JSONHelper.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/LocalStorage.java" target-dir="src/com/cowbell/cordova/geofence" />
         <source-file src="src/android/LocalStorageDBHelper.java" target-dir="src/com/cowbell/cordova/geofence" />
@@ -46,7 +55,6 @@
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/manifest/application">
-            <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
             <service android:name="com.cowbell.cordova.geofence.ReceiveTransitionsIntentService" android:label="@string/app_name" android:exported="false">
             </service>
         </config-file>
@@ -64,6 +72,8 @@
             <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+			<uses-permission android:name="android.permission.VIBRATE" />
+			<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
         </config-file>
 
     </platform>
@@ -101,4 +111,29 @@
         </js-module>
     </platform>
 
+    <!-- ios -->
+    <platform name="ios">
+        <hook type="after_plugin_install" src="hooks/add_swift_support.js" />
+        <config-file target="*-Info.plist" parent="NSLocationAlwaysUsageDescription">
+            <string>${EXECUTABLE_NAME} Would Like to Use Your Current Location Even In Background.</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="NSLocationWhenInUseUsageDescription">
+            <string>${EXECUTABLE_NAME} Would Like to Use Your Current Location When In Use.</string>
+        </config-file>
+        <config-file target="*-Info.plist" parent="UIBackgroundModes">
+            <array>
+                <string>location</string>
+                <string>remote-notification</string>
+            </array>
+        </config-file>
+        <config-file target="config.xml" parent="/*">
+          <feature name="GeofencePlugin">
+            <param name="ios-package" value="HWPGeofencePlugin"/>
+          </feature>
+        </config-file>
+        <header-file src="src/ios/Geo-Bridging-Header.h" />
+        <source-file src="src/ios/GeofencePlugin.swift"/>
+        <source-file src="src/ios/SwiftData.swift"/>
+        <source-file src="src/ios/json.swift"/>
+    </platform>
 </plugin>

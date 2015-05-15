@@ -1,5 +1,6 @@
-var exec = require("cordova/exec"),
-    Promise = require("com.vladstirbu.cordova.promise.Promise"),
+var exec = require('cordova/exec'),
+    Promise = require('com.vladstirbu.cordova.promise.Promise'),
+    channel = require('cordova/channel'),
     geofence,
     Geofence = function () {
 
@@ -41,6 +42,17 @@ Geofence.prototype.configApi = function (args, success, error) {
 };
 
 /**
+ * Simple ping function for testing
+ * @param  {Function} success callback
+ * @param  {Function} error callback
+ *
+ * @return {Promise}
+ */
+Geofence.prototype.ping = function (success, error) {
+    return execPromise(success, error, 'GeofencePlugin', 'ping', []);
+}
+
+/**
  * Removing geofences with given ids
  *
  * @name  remove
@@ -80,6 +92,33 @@ Geofence.prototype.getWatched = function (success, error) {
     return execPromise(success, error, 'GeofencePlugin', 'getWatched', []);
 };
 
+/**
+ * Called when app is opened via Notification bar
+ *
+ * @name onNotificationClicked
+ * @param {JSON} notificationData user data from notification
+ */
+Geofence.prototype.onNotificationClicked = function (notificationData) {
+
+};
+
+/**
+ * Called when app received geofence transition event
+ * @param  {Array} geofences
+ */
+Geofence.prototype.onTransitionReceived = function (geofences) {
+    this.receiveTransition(geofences);
+};
+
+/**
+ * Called when app received geofence transition event
+ * @deprecated since version 0.4.0, see onTransitionReceived
+ * @param  {Array} geofences
+ */
+Geofence.prototype.receiveTransition = function (geofences) {
+
+};
+
 function execPromise(success, error, pluginName, method, args) {
     return new Promise(function (resolve, reject) {
         exec(function (result) {
@@ -99,6 +138,14 @@ function execPromise(success, error, pluginName, method, args) {
             args);
     });
 }
+
+
+// Called after 'deviceready' event
+channel.deviceready.subscribe(function () {
+    // Device is ready now, the listeners are registered
+    // and all queued events can be executed.
+    exec(null, null, 'GeofencePlugin', 'deviceReady', []);
+});
 
 geofence = new Geofence();
 module.exports = geofence;
